@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:mime/mime.dart';
 import 'package:path/path.dart';
 import 'package:sqflite_live/src/exceptions/file_failure.dart';
-import 'package:sqflite_live/src/host/file_manager/file_manager.dart';
 import 'package:sqflite_live/src/host/host_binder/host_binder.dart';
 import 'package:sqflite_live/src/host/host_binder/host_parameters.dart';
 import 'package:sqflite_live/src/host/logger/log_me.dart';
@@ -11,9 +10,8 @@ import 'package:sqflite_live/src/host/logger/log_me.dart';
 import '../../exceptions/server_failure.dart';
 class IHostBinder extends HostBinder{
   final HostParameters _hostParameters;
-  final FileManager _fileManager;
   final LogMe _logMe;
-  IHostBinder(this._hostParameters, this._fileManager, this._logMe);
+  IHostBinder(this._hostParameters,  this._logMe);
   HttpServer? server;
   Future<String> _getLocalIpAddress() async {
     // List IPv4 network interfaces, excluding loopback.
