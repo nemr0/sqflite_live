@@ -1,39 +1,149 @@
-<!-- 
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
+# sqflite\_live
 
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/tools/pub/writing-package-pages). 
-
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/guides/libraries/create-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/to/develop-packages). 
--->
-
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
+A Dart package that spins up a local HTTP/WebSocket server to provide a live, real-time view of your SQLite database (`sqflite`) in the browser or any networked device.
 
 ## Features
 
-TODO: List what your package can do. Maybe include images, gifs, or videos.
+* **Live updates**: Automatically pushes database changes over WebSockets.
+* **Cross-platform**: Works on Android, iOS, and macOS desktop.
+* **Zero-config**: Binds to all interfaces (`0.0.0.0`) by default, ready for LAN access or tunneling.
 
-## Getting started
+## Installation
 
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
+Add the package to your `pubspec.yaml`:
 
-## Usage
-
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder. 
-
-```dart
-const like = 'sample';
+```yaml
+dependencies:
+  sqflite_live: ^0.1.0
 ```
 
-## Additional information
+Then run:
 
-TODO: Tell users more about the package: where to find more information, how to 
-contribute to the package, how to file issues, what response they can expect 
-from the package authors, and more.
+```bash
+flutter pub get
+```
+
+## Example Usage
+
+In your Flutter app, simply call `.live()` on your database instance. For example:
+
+```dart
+import 'package:path/path.dart';
+import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_live/sqflite_live.dart';
+
+Future<Database> _initDatabase() async {
+  final dbPath = await getDatabasesPath();
+  final path = join(dbPath, 'my_database.db');
+
+  return (await openDatabase(
+    path,
+    version: 1,
+    onCreate: (db, version) async {
+      await db.execute(
+        'CREATE TABLE items(id INTEGER PRIMARY KEY, name TEXT)',
+      );
+    },
+  ))
+    // Start the live server on port 8080
+    ..live(port: 8080);
+}
+```
+
+Now run your app and open your browser (or any device on the same network) to:
+
+```
+http://<YOUR_DEVICE_IP>:8080
+```
+
+to view and interact with live database updates.
+
+## Platform-Specific Permissions
+
+### Android
+
+In **android/app/src/main/AndroidManifest.xml**, ensure you have:
+
+```xml
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.example.app">
+  <!-- Allow HTTP server to receive and send traffic -->
+  <uses-permission android:name="android.permission.INTERNET" />
+  
+  <application
+    android:label="${applicationName}"
+    android:usesCleartextTraffic="true"  <!-- Enable clear-text (HTTP) traffic -->
+    ...>
+  </application>
+</manifest>
+```
+
+If targeting Android 9+ and you want to restrict cleartext to local LAN only, create `android/app/src/main/res/xml/network_security_config.xml`:
+
+```xml
+<network-security-config>
+  <domain-config cleartextTrafficPermitted="true">
+    <domain includeSubdomains="true">10.0.2.2</domain>
+    <domain includeSubdomains="true">192.168.*.*</domain>
+  </domain-config>
+</network-security-config>
+```
+
+Then reference it in your `AndroidManifest.xml`:
+
+```xml
+<application
+  android:networkSecurityConfig="@xml/network_security_config"
+  android:usesCleartextTraffic="false"
+  ...>
+```
+
+### iOS
+
+In **ios/Runner/Info.plist**, add:
+
+```xml
+<key>NSLocalNetworkUsageDescription</key>
+<string>This app needs to host a local HTTP server to provide a live view of the database on other devices.</string>
+
+<key>NSBonjourServices</key>
+<array>
+  <string>_http._tcp</string>
+</array>
+```
+
+After installation, iOS will prompt:
+
+> “"YourApp" Would Like to Find and Connect to Devices on Your Local Network.”
+
+Be sure the user grants this, or go to **Settings → Privacy → Local Network**.
+
+### macOS
+
+For Flutter desktop apps, add these entitlements and Info.plist entries.
+
+**macos/Runner/DebugProfile.entitlements** & **Release.entitlements**:
+
+```xml
+<key>com.apple.security.network.client</key>
+<true/>
+<key>com.apple.security.network.server</key>
+<true/>
+```
+
+**macos/Runner/Info.plist**:
+
+```xml
+<key>NSLocalNetworkUsageDescription</key>
+<string>This app hosts a local HTTP server for live database debugging.</string>
+
+<key>NSBonjourServices</key>
+<array>
+  <string>_http._tcp</string>
+</array>
+```
+
+Reinstall the app to see the Local Network permission prompt in System Settings.
+
+## License
+
+MIT © Omar Elnemr
