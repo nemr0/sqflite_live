@@ -38,7 +38,7 @@ class IHostBinder extends HostBinder{
 
       server = await HttpServer.bind(InternetAddress.anyIPv4, _hostParameters.port);
       String ip =await _getLocalIpAddress();
-      _logMe.info('🗂️  Static server running at http://$ip:${_hostParameters.port}');
+      _logMe.info('🗂️ SQFLITE Server @ http://$ip:${_hostParameters.port}');
       await for (HttpRequest request in server!) {
         final String uriPath = (request.uri.path == '/' ? '/index.html' : request.uri.path).replaceFirst('/', '');
         final String filePath = join(hostDirectory, uriPath);
