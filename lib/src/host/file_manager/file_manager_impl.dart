@@ -7,7 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:sqflite_live/src/exceptions/failure_abs.dart';
 import 'package:sqflite_live/src/exceptions/file_failure.dart';
 import 'package:sqflite_live/src/host/file_manager/file_manager.dart';
-import 'package:flutter/services.dart' show AssetManifest, ByteData, Uint8List, rootBundle;
+import 'package:flutter/services.dart' show  ByteData, Uint8List, rootBundle;
 
 class IFileManager extends FileManager {
   Directory? hostDir;
@@ -18,8 +18,6 @@ class IFileManager extends FileManager {
     try {
       await _getHostPath();
       await _linkDb(db);
-      print('dbPath:$dbPath');
-
       await _copyAssets(hostDir!.path);
       return hostDir!;
     } on FileFailure catch (_) {
@@ -44,7 +42,7 @@ class IFileManager extends FileManager {
     try {
       if (hostDir == null) {
         // get cache directory
-        final hostPath = '${(await getTemporaryDirectory()).path}/host';
+        final hostPath = join((await getApplicationSupportDirectory()).path,'host');
         hostDir = Directory(hostPath);
         if (!hostDir!.existsSync()) {
           hostDir!.createSync(recursive: true);
@@ -127,7 +125,6 @@ class IFileManager extends FileManager {
       }
     }
 
-    print('Assets extracted to $toPath');
   }
 
   @override
