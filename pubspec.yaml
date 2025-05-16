@@ -1,6 +1,6 @@
 name: sqflite_live
 description: Sqflite live server for viewing db data on web-based local server.
-version: 0.4.0
+version: 0.4.1
 # repository: https://github.com/my_org/my_repo
 
 environment:
