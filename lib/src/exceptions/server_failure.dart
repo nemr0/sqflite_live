@@ -1,7 +1,7 @@
 import 'package:sqflite_live/src/exceptions/failure_abs.dart';
 
 class ServerFailure extends Failure{
-  ServerFailure(super.message,{super.stackTrace});
+ const ServerFailure(final String message,{final StackTrace? stackTrace}) : super(message,stackTrace: stackTrace);
 
   @override
   List<Object?> get props => [];

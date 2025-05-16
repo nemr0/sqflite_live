@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
@@ -7,7 +8,7 @@ import 'package:sqflite_live/sqflite_live.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final db = await DatabaseHelper.instance.database;
+   await DatabaseHelper.instance.database;
   // Insert some random data once (you might guard this so it only runs on first launch)
   await DatabaseHelper.instance.insertRandomData();
   runApp(MyApp());
@@ -115,13 +116,21 @@ class DatabaseHelper {
     final db = await database;
     final allUsers = await db.query(userTable);
     final allTasks = await db.query(taskTable);
-    print('=== USERS ===');
-    for (var u in allUsers) {
-      print(u);
+    if (kDebugMode) {
+      print('=== USERS ===');
     }
-    print('=== TASKS ===');
+    for (var u in allUsers) {
+      if (kDebugMode) {
+        print(u);
+      }
+    }
+    if (kDebugMode) {
+      print('=== TASKS ===');
+    }
     for (var t in allTasks) {
-      print(t);
+      if (kDebugMode) {
+        print(t);
+      }
     }
   }
 }
