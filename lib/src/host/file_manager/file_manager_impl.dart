@@ -10,16 +10,17 @@ import 'package:sqflite_live/src/host/file_manager/file_manager.dart';
 import 'package:flutter/services.dart' show  ByteData, Uint8List, rootBundle;
 
 class IFileManager extends FileManager {
-  Directory? hostDir;
-  File? dbPath;
+
+  Directory? _hostDir;
+  File? _dbPath;
 
   @override
   Future<Directory> prepareFiles(String db) async {
     try {
       await _getHostPath();
       await _linkDb(db);
-      await _copyAssets(hostDir!.path);
-      return hostDir!;
+      await _copyAssets(_hostDir!.path);
+      return _hostDir!;
     } on FileFailure catch (_) {
       rethrow;
     } catch (e, s) {
@@ -28,10 +29,10 @@ class IFileManager extends FileManager {
   }
 
   @override
-  Future<bool> flushCache() async {
-    if (hostDir != null) {
-      if (hostDir!.existsSync()) {
-        hostDir!.deleteSync(recursive: true);
+  Future<bool> flush() async {
+    if (_hostDir != null) {
+      if (_hostDir!.existsSync()) {
+        _hostDir!.deleteSync(recursive: true);
         return true;
       }
     }
@@ -40,16 +41,16 @@ class IFileManager extends FileManager {
 
   Future<Directory> _getHostPath() async {
     try {
-      if (hostDir == null) {
+      if (_hostDir == null) {
         // get cache directory
         final hostPath = join((await getApplicationSupportDirectory()).path,'host');
-        hostDir = Directory(hostPath);
-        if (!hostDir!.existsSync()) {
-          hostDir!.createSync(recursive: true);
+        _hostDir = Directory(hostPath);
+        if (!_hostDir!.existsSync()) {
+          _hostDir!.createSync(recursive: true);
         }
-        return hostDir!;
+        return _hostDir!;
       }
-      return hostDir!;
+      return _hostDir!;
     } catch (e, s) {
       throw (FileFailure('Couldn\'t Creating Host directory: $e',
           stackTrace: s));
@@ -73,16 +74,18 @@ class IFileManager extends FileManager {
   static const Failure _dbFileNotFoundFailure =
       FileFailure('Database file doesn\'t exist');
 
+
   void _createDbLink(File file) {
     if (!file.existsSync()) {
       throw (_dbFileNotFoundFailure);
     }
-    final newDbFile = Link('${hostDir!.path}/${file.path.split('/').last}');
+    final newDbFile = Link('${_hostDir!.path}/cached.db');
     if (newDbFile.existsSync()) {
       newDbFile.deleteSync();
     }
     newDbFile.createSync(file.path);
-    dbPath = file;
+
+    _dbPath = file;
   }
 
   File _firstDBFileFrom(Directory dbDir) {
@@ -129,7 +132,7 @@ class IFileManager extends FileManager {
 
   @override
   File get dbFile  {
-    if(dbPath == null) throw(_dbFileNotFoundFailure);
-    return dbPath!;
+    if(_dbPath == null) throw(_dbFileNotFoundFailure);
+    return _dbPath!;
   }
 }

@@ -4,7 +4,7 @@ import 'package:sqflite_live/src/host/logger/log_me.dart';
 class ILogMe extends LogMe{
   final Level level;
   ILogMe(this.level){
-   _logger = Logger(printer: _MarkdownLinkPrinter(),level: level);
+   _logger = Logger(printer: PrettyPrinter(),level: level);
   }
   late final Logger _logger;
   @override

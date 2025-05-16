@@ -15,11 +15,21 @@ class IHostBinder extends HostBinder{
   final LogMe _logMe;
   IHostBinder(this._hostParameters, this._fileManager, this._logMe);
   HttpServer? server;
-
+  Future<String> _getLocalIpAddress() async {
+    // List IPv4 network interfaces, excluding loopback.
+    final interfaces = await NetworkInterface.list(
+      type: InternetAddressType.IPv4,
+      includeLoopback: false,
+    );
+    // Choose the first address available, or return a default value.
+    if (interfaces.isNotEmpty && interfaces.first.addresses.isNotEmpty) {
+      return interfaces.first.addresses.first.address;
+    }
+    return 'localhost';
+  }
   @override
   Future<void> startServer(String hostDirectory) async {
     try {
-
 
       final Directory directory = Directory(hostDirectory);
       if (!directory.existsSync()) {
@@ -27,8 +37,8 @@ class IHostBinder extends HostBinder{
       }
 
       server = await HttpServer.bind(InternetAddress.anyIPv4, _hostParameters.port);
-      _logMe.info('🗂️  Static server running at http://${server?.address.address}:${_hostParameters.port}/index.html?url=${_fileManager.dbName}/');
-
+      String ip =await _getLocalIpAddress();
+      _logMe.info('🗂️  Static server running at http://$ip:${_hostParameters.port}');
       await for (HttpRequest request in server!) {
         final String uriPath = (request.uri.path == '/' ? '/index.html' : request.uri.path).replaceFirst('/', '');
         final String filePath = join(hostDirectory, uriPath);
