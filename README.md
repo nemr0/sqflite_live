@@ -8,7 +8,7 @@ A Dart package that spins up a local HTTP/WebSocket server to provide a live, re
 - [x] Runs on any device on the same network using the provided link.
 - [x] Just refresh for updates.(on any CRUD operation just refresh your browser)
 - [x] Deletes all unneeded data after closing the server.
-- [] adding a widget for showing that the server is running.
+- [ ] adding a widget for showing that the server is running.
 
 ## Credits
   This package utilizes a custom version of [sqlite_viewer](https://github.com/inloop/sqlite-viewer) for displaying and interacting with the SQLite database. 
