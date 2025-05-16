@@ -4,9 +4,14 @@ A Dart package that spins up a local HTTP/WebSocket server to provide a live, re
 
 ## Features
 
-* **Live updates**: Automatically pushes database changes over WebSockets.
-* **Cross-platform**: Works on Android, iOS, and macOS desktop.
-* **Zero-config**: Binds to all interfaces (`0.0.0.0`) by default, ready for LAN access or tunneling.
+- [x] Runs a local server with a symbolic link to your sqflite db file.
+- [x] Runs on any device on the same network using the provided link.
+- [x] Just refresh for updates.(on any CRUD operation just refresh your browser)
+- [x] Deletes all unneeded data after closing the server.
+- [] adding a widget for showing that the server is running.
+
+## Credits
+  This package utilizes a custom version of [sqlite_viewer](https://github.com/inloop/sqlite-viewer) for displaying and interacting with the SQLite database. 
 
 ## Installation
 
@@ -62,6 +67,14 @@ to view and interact with live database updates.
 
 ### Android
 
+if you are using an emulator and you want to access the sqlite viewer from host, run in your terminal:
+
+`adb -s emulator-5554 forward tcp:8081 tcp:8081`
+
+replace `emulator-5554` with your emulator ID and `8081` with your selected port.
+
+it's advised to use this in debug mode only as you can use `AndroidManifest.xml` inside your `debug` folder.
+
 In **android/app/src/main/AndroidManifest.xml**, ensure you have:
 
 ```xml
@@ -97,7 +110,10 @@ Then reference it in your `AndroidManifest.xml`:
   ...>
 ```
 
+
+
 ### iOS
+it's advised to use this in debug mode only as you can create a `info-development.plist`
 
 In **ios/Runner/Info.plist**, add:
 
@@ -118,6 +134,7 @@ After installation, iOS will prompt:
 Be sure the user grants this, or go to **Settings → Privacy → Local Network**.
 
 ### macOS
+it's advised to use this in debug mode only as you can create a `info-development.plist`
 
 For Flutter desktop apps, add these entitlements and Info.plist entries.
 
@@ -146,4 +163,4 @@ Reinstall the app to see the Local Network permission prompt in System Settings.
 
 ## License
 
-MIT © Omar Elnemr
+[BSD 3-clause license](https://opensource.org/license/BSD-3-Clause) © Omar Elnemr

@@ -113,26 +113,5 @@ class DatabaseHelper {
     }
   }
 
-  // (Optional) helper to fetch and print data for debugging
-  Future<void> debugPrintAll() async {
-    final db = await database;
-    final allUsers = await db.query(userTable);
-    final allTasks = await db.query(taskTable);
-    if (kDebugMode) {
-      print('=== USERS ===');
-    }
-    for (var u in allUsers) {
-      if (kDebugMode) {
-        print(u);
-      }
-    }
-    if (kDebugMode) {
-      print('=== TASKS ===');
-    }
-    for (var t in allTasks) {
-      if (kDebugMode) {
-        print(t);
-      }
-    }
-  }
+
 }
