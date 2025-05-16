@@ -9,4 +9,7 @@ abstract class FileManager {
   Future<Directory> prepareFiles(String dbPath);
   /// Deletes the host directory and all its contents
   Future<bool> flushCache();
+
+  File get dbFile;
+  String get dbName => dbFile.path.split('/').last;
 }
