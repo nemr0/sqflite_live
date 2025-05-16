@@ -11,6 +11,7 @@ void main() async {
    await DatabaseHelper.instance.database;
   // Insert some random data once (you might guard this so it only runs on first launch)
   await DatabaseHelper.instance.insertRandomData();
+
   runApp(MyApp());
 }
 
@@ -56,6 +57,7 @@ class DatabaseHelper {
       version: _dbVersion,
       onCreate: _onCreate,
     ))..live(level: Level.all);
+
   }
 
   // SQL to create the two tables
