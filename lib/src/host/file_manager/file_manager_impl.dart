@@ -15,11 +15,16 @@ class IFileManager extends FileManager {
   File? _dbPath;
 
   @override
-  Future<Directory> prepareFiles(String db) async {
+  Future<Directory> prepareFiles(String db,{String? hostDir}) async {
     try {
-      await _getHostPath();
+      if(hostDir == null) {
+        await _getHostPath();
+      } else{
+        _hostDir = Directory(hostDir);
+        if(_hostDir!.existsSync() == false)  _hostDir!.createSync(recursive: true);
+      }
       await _linkDb(db);
-      await _copyAssets(_hostDir!.path);
+      await _extractAssets(_hostDir!.path);
       return _hostDir!;
     } on FileFailure catch (_) {
       rethrow;
@@ -96,7 +101,7 @@ class IFileManager extends FileManager {
     return files.first as File;
   }
 
-  Future<void> _copyAssets(String toPath) async {
+  Future<void> _extractAssets(String toPath) async {
     // 1. Load the ZIP from your bundled assets
     final ByteData zipData = await rootBundle.load('packages/sqflite_live/sqlite_viewer/package.zip');
 

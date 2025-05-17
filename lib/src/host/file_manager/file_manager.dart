@@ -18,7 +18,7 @@ abstract class FileManager {
   ///
   /// [dbPath] is the path to the database file.
   /// Returns a [Future]<[Directory]> representing the host directory.
-  Future<Directory> prepareFiles(String dbPath);
+  Future<Directory> prepareFiles(String dbPath,{String? hostDir});
 
   /// Deletes the host directory and all its contents.
   ///
