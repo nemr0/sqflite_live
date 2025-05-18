@@ -84,13 +84,23 @@ class IFileManager extends FileManager {
     if (!file.existsSync()) {
       throw (_dbFileNotFoundFailure);
     }
-    final newDbFile = Link('${_hostDir!.path}/cached.db');
-    if (newDbFile.existsSync()) {
-      newDbFile.deleteSync();
-    }
-    newDbFile.createSync(file.path);
+    final dbPath  = '${_hostDir!.path}/cached.db';
+    try{
+      final newDbFile = Link(dbPath);
+      if (newDbFile.existsSync()) {
+        newDbFile.deleteSync();
+      }
+      newDbFile.createSync(file.path);
 
-    _dbPath = file;
+      _dbPath = file;
+    }catch(e,s){
+      if(e is FileSystemException) {
+       File(dbPath).createSync();
+       file.copySync(dbPath);
+      } else {
+        throw (FileFailure('error: $e', stackTrace: s));
+      }
+    }
   }
 
   File _firstDBFileFrom(Directory dbDir) {
