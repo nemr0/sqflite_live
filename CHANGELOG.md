@@ -1,3 +1,7 @@
+## 1.0.1
+
+- Logging improvements.
+
 ## 1.0.0
 
 - Handled devices that doesn't support symbolic links.

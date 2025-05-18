@@ -26,7 +26,7 @@ extension SqlfliteExtension on Database {
   /// - [level]: The logging level used to initialize the logger. Defaults to [Level.warning].
   /// - [port]: Port number on which the live server should run. Defaults to 8081.
 
-  Future<void> live({bool enabled = true,Level level = Level.warning,int port = 8081}) async {
+  Future<void> live({bool enabled = true,Level level = Level.info,int port = 8081}) async {
     if(enabled == false || isSupportedPlatform()==false) return;
     final logger = ILogMe(level);
     final path = await getDatabasesPath();
