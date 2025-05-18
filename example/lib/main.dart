@@ -55,7 +55,7 @@ class DatabaseHelper {
       path,
       version: _dbVersion,
       onCreate: _onCreate,
-    ))..live(level: Level.all);
+    )..live(enabled:  true, level: Level.all,port: 8881));
 
   }
 

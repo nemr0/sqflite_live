@@ -2,13 +2,17 @@
 
 A Dart package that spins up a local HTTP/WebSocket server to provide a live, real-time view of your SQLite database (`sqflite`) in the browser or any networked device.
 
+## Demo 
+
+![Demo](https://raw.githubusercontent.com/OmarElnemr/sqflite_live/master/demo.gif)
+
 ## Features
 
 - [x] Runs a local server with a symbolic link to your sqflite db file.
 - [x] Runs on any device on the same network using the provided link.
 - [x] Just refresh for updates.(on any CRUD operation just refresh your browser)
 - [x] Deletes all unneeded data after closing the server.
-- [ ] adding a widget for showing that the server is running.
+- [ ] Adding a widget for showing that the server is running.
 
 ## Credits
   This package utilizes a custom version of [sqlite_viewer](https://github.com/inloop/sqlite-viewer) for displaying and interacting with the SQLite database. 
@@ -19,7 +23,7 @@ Add the package to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  sqflite_live: ^0.1.0
+  sqflite_live: ^1.0.0
 ```
 
 Then run:
@@ -64,6 +68,8 @@ http://<YOUR_DEVICE_IP>:8080
 to view and interact with live database updates.
 
 ## Platform-Specific Permissions
+
+Most Apps doesn't need these permissions and work correctly without them, but if you want to access the sqlite viewer from other devices on the same network, you need to add some permissions.
 
 ### Android
 
