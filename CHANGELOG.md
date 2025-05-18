@@ -1,4 +1,4 @@
-## 0.4.2
+## 1.0.0
 
 - Handled devices that doesn't support symbolic links.
 - Minified sqlite_viewer (total package size: 420kB).
