@@ -44,25 +44,7 @@ function initialize() {
   if (typeof WebAssembly === "undefined") {
     $("#compat-error").toggleClass("d-none", false);
   } else {
-    setIsLoading(true);
-    const xhr = new XMLHttpRequest();
-    xhr.open("GET", "cached.db", true);
-    xhr.responseType = "arraybuffer";
-    xhr.onload = function (e) {
-      if (this.status === 200) {
-        loadDB(this.response);
-      } else {
-        showError(
-          "Failed to load default database: cached.db. Status: " + this.status
-        );
-        setIsLoading(false);
-      }
-    };
-    xhr.onerror = function (e) {
-      showError("Error occurred while trying to fetch cached.db.");
-      setIsLoading(false);
-    };
-    xhr.send();
+    reloadDB(startAutoRefresh);
   }
 
   //Initialize editor
@@ -82,8 +64,13 @@ function initialize() {
   });
 }
 
-function loadDB(arrayBuffer) {
+function loadDB(arrayBuffer, onLoaded, preserveQuery) {
   setIsLoading(true);
+
+  // When refreshing in place (auto-refresh / after a write) keep the user where
+  // they were instead of snapping back to the first table's default select.
+  const prevQuery = preserveQuery ? editor.getValue() : null;
+  const prevTable = preserveQuery ? $("#tables").val() : null;
 
   resetTableList();
 
@@ -125,15 +112,92 @@ function loadDB(arrayBuffer) {
     }
     tables.free();
 
-    //Select first table and show It
-    tableList.val(firstTableName);
-    doDefaultSelect(firstTableName);
+    // Restore the previous view when refreshing in place; otherwise select the
+    // first table and show its default query.
+    if (prevQuery && loadedTableNames.indexOf(prevTable) > -1) {
+      tableList.val(prevTable);
+      lastCachedQueryCount = { select: "", count: 0 };
+      renderQuery(prevQuery);
+    } else {
+      tableList.val(firstTableName);
+      doDefaultSelect(firstTableName);
+    }
 
     $("#output-box").fadeIn();
     $("#success-box").show();
 
     setIsLoading(false);
+    if (typeof onLoaded === "function") onLoaded();
   });
+}
+
+// Re-fetches cached.db from the server and reloads it into the in-memory
+// database, so the view reflects the real database after a server-side write.
+// Cache-busted so the browser never serves a stale copy.
+function reloadDB(onLoaded, preserveQuery) {
+  setIsLoading(true);
+  const xhr = new XMLHttpRequest();
+  xhr.open("GET", "cached.db?_=" + Date.now(), true);
+  xhr.responseType = "arraybuffer";
+  xhr.onload = function () {
+    if (this.status === 200) {
+      loadDB(this.response, onLoaded, preserveQuery);
+    } else {
+      showError("Failed to load database: cached.db. Status: " + this.status);
+      setIsLoading(false);
+    }
+  };
+  xhr.onerror = function () {
+    showError("Error occurred while trying to fetch cached.db.");
+    setIsLoading(false);
+  };
+  xhr.send();
+}
+
+// Polls the server for the database signature and reloads the view in place
+// whenever the app mutates the database, so changes made inside the app (not
+// just through this viewer) show up without a manual page refresh.
+const AUTO_REFRESH_MS = 2000;
+let lastDbVersion = null;
+let autoReloadInFlight = false;
+let autoReloadStartedAt = 0;
+
+function startAutoRefresh() {
+  setInterval(pollDbVersion, AUTO_REFRESH_MS);
+}
+
+function pollDbVersion() {
+  // Self-heal: if a reload never reported back (e.g. it errored out), don't
+  // block auto-refresh forever.
+  if (autoReloadInFlight && Date.now() - autoReloadStartedAt > 10000) {
+    autoReloadInFlight = false;
+  }
+  if (autoReloadInFlight) return;
+  fetch("db-version?_=" + Date.now())
+    .then(function (res) {
+      return res.json();
+    })
+    .then(function (v) {
+      if (v.error) return;
+      const signature = v.size + ":" + v.modified;
+      // Seed on the first poll so we don't reload on initial load.
+      if (lastDbVersion === null) {
+        lastDbVersion = signature;
+        return;
+      }
+      if (signature === lastDbVersion) return;
+      // Record the new signature up front so we don't re-trigger on the next
+      // poll for the same change.
+      lastDbVersion = signature;
+      autoReloadInFlight = true;
+      autoReloadStartedAt = Date.now();
+      reloadDB(function () {
+        autoReloadInFlight = false;
+      }, true);
+    })
+    .catch(function () {
+      // Server briefly unreachable (e.g. app resuming) — try again next tick.
+    });
 }
 
 function getTableRowsCount(name) {
@@ -234,8 +298,56 @@ function doDefaultSelect(name) {
 
 function executeSql() {
   const query = editor.getValue();
-  renderQuery(query);
-  $("#tables").val(getTableNameFromQuery(query));
+  const head = query.trimStart().toUpperCase();
+  const isQuery =
+    head.startsWith("SELECT") ||
+    head.startsWith("PRAGMA") ||
+    head.startsWith("EXPLAIN") ||
+    head.startsWith("WITH");
+
+  if (isQuery) {
+    // Read-only: run locally against the in-memory copy.
+    renderQuery(query);
+    $("#tables").val(getTableNameFromQuery(query));
+    return;
+  }
+
+  // Mutation: run it on the real database via the server, then reload so the
+  // view reflects the persisted change.
+  runServerExec(query);
+}
+
+// POSTs a mutating statement to the server's /exec endpoint (which runs it on
+// the app's live database), then re-fetches the database and reports how many
+// rows were affected.
+function runServerExec(query) {
+  setIsLoading(true);
+  fetch("exec", {
+    method: "POST",
+    headers: { "Content-Type": "text/plain" },
+    body: query,
+  })
+    .then(function (res) {
+      return res.json().then(function (json) {
+        return { ok: res.ok, json: json };
+      });
+    })
+    .then(function (result) {
+      if (!result.ok || result.json.error) {
+        setIsLoading(false);
+        showError(result.json.error || "Server returned an error.");
+        return;
+      }
+      const affected = result.json.rowsAffected || 0;
+      reloadDB(function () {
+        infoBox.text(affected + " row(s) affected.");
+        infoBox.show();
+      });
+    })
+    .catch(function (err) {
+      setIsLoading(false);
+      showError(err);
+    });
 }
 
 function getTableNameFromQuery(query) {

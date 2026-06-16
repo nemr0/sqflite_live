@@ -102,6 +102,17 @@ By default (`autoRestart: true`) the handle observes the app lifecycle. It does 
 
 > The server runs inside your app's process, so it can't keep serving while the app is suspended in the background — mobile OSes pause the process. `autoRestart` makes returning to the foreground seamless by repairing the server when needed, rather than keeping it alive in the background. Pass `autoRestart: false` to manage the lifecycle yourself.
 
+## Editing data from the viewer
+
+The viewer is no longer read-only. `SELECT` (and `PRAGMA`/`EXPLAIN`/`WITH`) queries still run locally in the browser, but any other statement you type in the query box — `INSERT`, `UPDATE`, `DELETE`, DDL — is sent to the server's `POST /exec` endpoint and executed against your app's **live `Database` connection**. The change persists, is visible to the app immediately, and the viewer reloads to reflect it (it reports `N row(s) affected`).
+
+```sql
+DELETE FROM users WHERE id = 1;   -- runs on the real database
+UPDATE users SET age = 30 WHERE name = 'User42';
+```
+
+> ⚠️ **Security:** this means any device that can reach the server can run arbitrary SQL against your database. The server is meant for **debug builds on a trusted local network only** — don't ship it in release builds or expose the port publicly.
+
 ## Platform-Specific Permissions
 
 Most Apps doesn't need these permissions and work correctly without them, but if you want to access the sqlite viewer from other devices on the same network, you need to add some permissions.

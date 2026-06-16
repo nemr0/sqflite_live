@@ -1,6 +1,8 @@
 
 
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_live/src/host/db_executor.dart';
 import 'package:sqflite_live/src/host/file_manager/file_manager.dart';
 import 'package:sqflite_live/src/host/file_manager/file_manager_impl.dart';
 import 'package:sqflite_live/src/host/host_binder/host_binder_impl.dart';
@@ -34,14 +36,17 @@ extension SqlfliteExtension on Database {
   /// [SqfliteLive.start] or [SqfliteLive.dispose] the server, or `null` when
   /// [enabled] is false or the platform is unsupported.
 
-  Future<SqfliteLive?> live({bool enabled = true,LogLevel level = LogLevel.info,int port = 8081,bool autoRestart = true}) async {
+  Future<SqfliteLive?> live({bool enabled = kDebugMode,LogLevel level = LogLevel.info,int port = 8081,bool autoRestart = true}) async {
     if(enabled == false || isSupportedPlatform()==false) return null;
     final logger = ILogMe(level);
     final path = await getDatabasesPath();
     final hostParameter = HostParameters(dbPath: path, port: port);
     final FileManager fileManager = IFileManager();
+    // `this` is the live connection, so SQL from the viewer runs on the same
+    // database the app uses.
+    final DbExecutor executor = SqfliteExecutor(this);
     final liveServer = LiveServer(
-        fileManager , IHostBinder(hostParameter,logger), hostParameter,logger);
+        fileManager , IHostBinder(hostParameter,logger,executor), hostParameter,logger);
     final live = SqfliteLive(liveServer, autoRestart: autoRestart);
     await live.start();
     return live;

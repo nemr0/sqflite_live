@@ -13,4 +13,9 @@ abstract class HostBinder {
   /// requests. Used to decide if a stale server needs rebuilding after the
   /// app returns from the background.
   Future<bool> isAlive();
+
+  /// Logs the URL(s) the server is reachable at. Called when the server starts
+  /// and again when the app resumes onto a still-running server, so the address
+  /// is always visible in the console.
+  Future<void> logAddress();
 }

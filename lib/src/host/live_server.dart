@@ -27,6 +27,9 @@ class LiveServer {
   /// performs a real loopback request.
   Future<bool> isHealthy() => _hostBinder.isAlive();
 
+  /// Re-logs the URL(s) the server is reachable at (e.g. on app resume).
+  Future<void> announce() => _hostBinder.logAddress();
+
   /// Prepares the necessary files and starts the HTTP server.
   ///
   /// The returned future does not complete until the server is closed (via

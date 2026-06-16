@@ -1,9 +1,12 @@
+import 'package:flutter/foundation.dart' show debugPrint;
+
 import 'package:sqflite_live/src/host/logger/log_me.dart';
 
-/// A dependency-free [LogMe] that writes colored messages to the console.
+/// A dependency-free [LogMe] that writes colored messages via [debugPrint].
 ///
-/// Colors are emitted as ANSI escape codes; `[label](url)` markdown links
-/// are rendered as clickable OSC 8 terminal hyperlinks.
+/// [debugPrint] is the Flutter-friendly console sink (throttled, stripped from
+/// release builds). Colors are emitted as ANSI escape codes; `[label](url)`
+/// markdown links are rendered as clickable OSC 8 terminal hyperlinks.
 class ILogMe extends LogMe {
   ILogMe(this.level);
 
@@ -19,8 +22,7 @@ class ILogMe extends LogMe {
       {StackTrace? trace}) {
     if (level == LogLevel.off || msgLevel.index < level.index) return;
     final text = _markdownToHyperlinks(msg.toString());
-    // ignore: avoid_print
-    print('$color$prefix $text$_reset${trace != null ? '\n$trace' : ''}');
+    debugPrint('$color$prefix $text$_reset${trace != null ? '\n$trace' : ''}');
   }
 
   @override
