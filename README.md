@@ -23,7 +23,7 @@ Add the package to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  sqflite_live: ^1.0.0
+  sqflite_live: ^1.2.1
 ```
 
 Then run:
@@ -66,6 +66,22 @@ http://<YOUR_DEVICE_IP>:8080
 ```
 
 to view and interact with live database updates.
+
+### Options
+
+`.live()` accepts a few named parameters:
+
+| Parameter | Type       | Default            | Description                                              |
+| --------- | ---------- | ------------------ | -------------------------------------------------------- |
+| `enabled` | `bool`     | `true`             | Set to `false` to skip starting the server.              |
+| `level`   | `LogLevel` | `LogLevel.info`    | Console log verbosity: `debug`, `info`, `warning`, `error`, `off`. |
+| `port`    | `int`      | `8081`             | Port the local server listens on.                        |
+
+```dart
+import 'package:sqflite_live/sqflite_live.dart';
+
+db.live(enabled: true, level: LogLevel.warning, port: 8080);
+```
 
 ## Platform-Specific Permissions
 

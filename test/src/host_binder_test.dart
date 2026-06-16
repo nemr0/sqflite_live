@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:logger/logger.dart';
 import 'package:sqflite_live/src/host/file_manager/file_manager.dart';
 import 'package:sqflite_live/src/host/file_manager/file_manager_impl.dart';
 import 'package:sqflite_live/src/host/host_binder/host_binder.dart';
@@ -23,7 +22,7 @@ void main(){
     final String hostDirectory = getHostDirectoryForTesting().path;
 
     final HostParameters hostParameters = HostParameters(dbPath: dbFile.path, port: 2231);
-    final LogMe logger = ILogMe(Level.all);
+    final LogMe logger = ILogMe(LogLevel.debug);
     final HostBinder hostBinder = IHostBinder(hostParameters,logger);
     test('startServer', () async {
       await fileManager.prepareFiles(dbFile.path,hostDir: hostDirectory);

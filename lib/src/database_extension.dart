@@ -1,11 +1,11 @@
 
 
-import 'package:logger/logger.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_live/src/host/file_manager/file_manager.dart';
 import 'package:sqflite_live/src/host/file_manager/file_manager_impl.dart';
 import 'package:sqflite_live/src/host/host_binder/host_binder_impl.dart';
 import 'package:sqflite_live/src/host/live_server.dart';
+import 'package:sqflite_live/src/host/logger/log_me.dart';
 import 'package:sqflite_live/src/host/logger/log_me_impl.dart';
 
 import 'host/host_binder/host_parameters.dart';
@@ -23,10 +23,10 @@ extension SqlfliteExtension on Database {
   ///
   /// Parameters:
   /// - [enabled]: Flag to determine if the live server should start. Defaults to true.
-  /// - [level]: The logging level used to initialize the logger. Defaults to [Level.warning].
+  /// - [level]: The logging level used to initialize the logger. Defaults to [LogLevel.info].
   /// - [port]: Port number on which the live server should run. Defaults to 8081.
 
-  Future<void> live({bool enabled = true,Level level = Level.info,int port = 8081}) async {
+  Future<void> live({bool enabled = true,LogLevel level = LogLevel.info,int port = 8081}) async {
     if(enabled == false || isSupportedPlatform()==false) return;
     final logger = ILogMe(level);
     final path = await getDatabasesPath();
