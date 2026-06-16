@@ -1,13 +1,12 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:archive/archive.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite_live/src/exceptions/failure_abs.dart';
 import 'package:sqflite_live/src/exceptions/file_failure.dart';
 import 'package:sqflite_live/src/host/file_manager/file_manager.dart';
-import 'package:flutter/services.dart' show  ByteData, Uint8List, rootBundle;
+import 'package:flutter/services.dart' show AssetManifest, ByteData, rootBundle;
 
 class IFileManager extends FileManager {
 
@@ -50,10 +49,12 @@ class IFileManager extends FileManager {
         // get cache directory
         final hostPath = join((await getApplicationSupportDirectory()).path,'host');
         _hostDir = Directory(hostPath);
-        if (!_hostDir!.existsSync()) {
-          _hostDir!.createSync(recursive: true);
-        }
-        return _hostDir!;
+      }
+      // Ensure the directory exists on disk. It may be cached from a previous
+      // run but deleted by flush() (e.g. when the server is stopped on app
+      // pause and restarted on resume), so recreate it whenever missing.
+      if (!_hostDir!.existsSync()) {
+        _hostDir!.createSync(recursive: true);
       }
       return _hostDir!;
     } catch (e, s) {
@@ -111,38 +112,39 @@ class IFileManager extends FileManager {
     return files.first as File;
   }
 
+  /// Asset key prefix under which the bundled viewer files live.
+  static const String _viewerAssetPrefix =
+      'packages/sqflite_live/sqlite_viewer/';
+
+  /// Copies the bundled sqlite_viewer files out to [toPath].
+  ///
+  /// The viewer ships as plain Flutter assets (not a zip), so we read the
+  /// asset manifest, take every key under [_viewerAssetPrefix] and write it to
+  /// disk preserving the directory structure. This keeps the package free of
+  /// any archive/zip dependency.
   Future<void> _extractAssets(String toPath) async {
-    // 1. Load the ZIP from your bundled assets
-    final ByteData zipData = await rootBundle.load('packages/sqflite_live/sqlite_viewer/package.zip');
-
-    // 2. Convert to Uint8List & decode
-    final Uint8List bytes = zipData.buffer.asUint8List();
-    final Archive archive = ZipDecoder().decodeBytes(bytes);
-
-    // 3. Ensure the target root directory exists
     final Directory targetDir = Directory(toPath);
     if (!await targetDir.exists()) {
       await targetDir.create(recursive: true);
     }
 
-    // 4. Iterate over every entry in the ZIP
-    for (final ArchiveFile file in archive) {
-      // Compute the full output path
-      final String outPath = join(toPath, file.name);
+    final AssetManifest manifest =
+        await AssetManifest.loadFromAssetBundle(rootBundle);
+    final Iterable<String> assetKeys = manifest
+        .listAssets()
+        .where((key) => key.startsWith(_viewerAssetPrefix));
 
-      if (file.isFile) {
-        // Ensure parent directories exist
-        final File outFile = File(outPath);
-        await outFile.parent.create(recursive: true);
+    for (final String key in assetKeys) {
+      final String relativePath = key.substring(_viewerAssetPrefix.length);
+      if (relativePath.isEmpty) continue;
 
-        // Write the file contents
-        await outFile.writeAsBytes(file.content as List<int>);
-      } else {
-        // It's a directory, so just create it
-        await Directory(outPath).create(recursive: true);
-      }
+      final File outFile = File(join(toPath, relativePath));
+      await outFile.parent.create(recursive: true);
+
+      final ByteData data = await rootBundle.load(key);
+      await outFile.writeAsBytes(data.buffer
+          .asUint8List(data.offsetInBytes, data.lengthInBytes));
     }
-
   }
 
   @override

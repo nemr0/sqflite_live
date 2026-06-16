@@ -1,9 +1,16 @@
 import 'package:sqflite_live/src/exceptions/failure_abs.dart';
 
 class FileFailure extends Failure {
-  const FileFailure(final String message, {final StackTrace? stackTrace}) : super(message,stackTrace: stackTrace);
+  const FileFailure(super.message, {super.stackTrace});
+
   @override
-  List<Object?> get props => [message];
+  bool operator ==(Object other) => identical(this, other) || other is FileFailure
+      && runtimeType == other.runtimeType
+      && message == other.message
+      && stackTrace == other.stackTrace;
+
+  @override
+  int get hashCode => message.hashCode ^ stackTrace.hashCode;    
 
   @override
   String toString() => 'FileFailure{message: $message, stackTrace: $stackTrace}';
