@@ -49,10 +49,12 @@ class IFileManager extends FileManager {
         // get cache directory
         final hostPath = join((await getApplicationSupportDirectory()).path,'host');
         _hostDir = Directory(hostPath);
-        if (!_hostDir!.existsSync()) {
-          _hostDir!.createSync(recursive: true);
-        }
-        return _hostDir!;
+      }
+      // Ensure the directory exists on disk. It may be cached from a previous
+      // run but deleted by flush() (e.g. when the server is stopped on app
+      // pause and restarted on resume), so recreate it whenever missing.
+      if (!_hostDir!.existsSync()) {
+        _hostDir!.createSync(recursive: true);
       }
       return _hostDir!;
     } catch (e, s) {

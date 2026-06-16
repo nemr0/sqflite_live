@@ -88,6 +88,29 @@ class IHostBinder extends HostBinder{
   }
   @override
   Future<void> closeServer() async {
-    await server?.close();
+    // force: true drops open connections immediately so a restart can't hang
+    // waiting on a browser keep-alive socket.
+    await server?.close(force: true);
+    server = null;
+  }
+
+  @override
+  Future<bool> isAlive() async {
+    if (server == null) return false;
+    HttpClient? client;
+    try {
+      client = HttpClient()..connectionTimeout = const Duration(seconds: 1);
+      final HttpClientRequest request =
+          await client.get('127.0.0.1', _hostParameters.port, '/');
+      final HttpClientResponse response =
+          await request.close().timeout(const Duration(seconds: 2));
+      await response.drain<void>();
+      return true;
+    } catch (_) {
+      // Connection refused / timed out / reset => the socket didn't survive.
+      return false;
+    } finally {
+      client?.close(force: true);
+    }
   }
 }

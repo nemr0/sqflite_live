@@ -71,17 +71,36 @@ to view and interact with live database updates.
 
 `.live()` accepts a few named parameters:
 
-| Parameter | Type       | Default            | Description                                              |
-| --------- | ---------- | ------------------ | -------------------------------------------------------- |
-| `enabled` | `bool`     | `true`             | Set to `false` to skip starting the server.              |
-| `level`   | `LogLevel` | `LogLevel.info`    | Console log verbosity: `debug`, `info`, `warning`, `error`, `off`. |
-| `port`    | `int`      | `8081`             | Port the local server listens on.                        |
+| Parameter     | Type       | Default            | Description                                              |
+| ------------- | ---------- | ------------------ | -------------------------------------------------------- |
+| `enabled`     | `bool`     | `true`             | Set to `false` to skip starting the server.              |
+| `level`       | `LogLevel` | `LogLevel.info`    | Console log verbosity: `debug`, `info`, `warning`, `error`, `off`. |
+| `port`        | `int`      | `8081`             | Port the local server listens on.                        |
+| `autoRestart` | `bool`     | `true`             | On returning to the foreground, check the server and rebuild it only if it stopped responding. |
 
 ```dart
 import 'package:sqflite_live/sqflite_live.dart';
 
 db.live(enabled: true, level: LogLevel.warning, port: 8080);
 ```
+
+### Lifecycle
+
+`.live()` returns a `SqfliteLive` handle (or `null` if disabled/unsupported) so you can control the server explicitly:
+
+```dart
+final live = await db.live(port: 8080);
+
+// later…
+await live?.ensureRunning(); // rebuild only if it stopped responding
+await live?.stop();          // close the server and free the port (reusable)
+await live?.start();         // bring it back up
+await live?.dispose();       // permanent teardown + stop observing app lifecycle
+```
+
+By default (`autoRestart: true`) the handle observes the app lifecycle. It does **not** stop the server when the app is backgrounded. When the app returns to the foreground it probes the server with a quick loopback request and rebuilds it **only if it stopped responding** (e.g. the OS tore the socket down while the app was suspended); a server that survived is left untouched. After a rebuild, just refresh the browser.
+
+> The server runs inside your app's process, so it can't keep serving while the app is suspended in the background — mobile OSes pause the process. `autoRestart` makes returning to the foreground seamless by repairing the server when needed, rather than keeping it alive in the background. Pass `autoRestart: false` to manage the lifecycle yourself.
 
 ## Platform-Specific Permissions
 

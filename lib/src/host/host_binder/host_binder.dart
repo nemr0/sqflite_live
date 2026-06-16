@@ -8,4 +8,9 @@ abstract class HostBinder {
 
   /// Closes the running server and cleans up resources.
   Future<void> closeServer();
+
+  /// Whether the server is currently bound and actually responding to
+  /// requests. Used to decide if a stale server needs rebuilding after the
+  /// app returns from the background.
+  Future<bool> isAlive();
 }
