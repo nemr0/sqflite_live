@@ -1,0 +1,37 @@
+body {
+    background-color: #121212;
+    color: #e0e0e0;
+}
+
+.container, .table, header, footer {
+    background-color: #1e1e1e;
+    color: #e0e0e0;
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: #2a2a2a;
+}
+
+a {
+    color: #64b5f6;
+}
+
+.btn-primary {
+    background-color: #64b5f6;
+    border-color: #64b5f6;
+}
+
+.btn-outline-secondary {
+    color: #e0e0e0;
+    border-color: #e0e0e0;
+}
+
+.dropdown-menu {
+    background-color: #1e1e1e;
+    color: #e0e0e0;
+}
+
+.ace_editor .ace_keyword  { color: #ffcc00 !important; }
+.ace_editor .ace_string   { color: #aaff88 !important; }
+.ace_editor .ace_comment  { color: #cccccc !important; }
+.ace_editor .ace_cursor   { color: #ffff00 !important; }
