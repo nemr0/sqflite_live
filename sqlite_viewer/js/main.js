@@ -299,11 +299,18 @@ function doDefaultSelect(name) {
 function executeSql() {
   const query = editor.getValue();
   const head = query.trimStart().toUpperCase();
-  const isQuery =
-    head.startsWith("SELECT") ||
-    head.startsWith("PRAGMA") ||
-    head.startsWith("EXPLAIN") ||
-    head.startsWith("WITH");
+  // A WITH (CTE) prefix can front either a query or a mutation
+  // (WITH x AS (...) INSERT/UPDATE/DELETE ...), so look past it for a mutation
+  // keyword rather than assuming it's read-only.
+  let isQuery;
+  if (head.startsWith("WITH")) {
+    isQuery = !/\b(INSERT|UPDATE|DELETE|REPLACE)\b/.test(head);
+  } else {
+    isQuery =
+      head.startsWith("SELECT") ||
+      head.startsWith("PRAGMA") ||
+      head.startsWith("EXPLAIN");
+  }
 
   if (isQuery) {
     // Read-only: run locally against the in-memory copy.
@@ -657,13 +664,12 @@ function exportQueryTableToCsv() {
   const query = editor.getValue();
   const exportedRows = exportCsvTableQuery(query);
   if (exportedRows != null) {
+    // FROM-less queries (e.g. SELECT 1+1) have no table name to derive from.
+    const tableName = getTableNameFromQuery(query) || "query_result";
     const blob = new Blob([arrayToCsv(exportedRows)], {
       type: "text/plain;charset=utf-8",
     });
-    saveAs(
-      blob,
-      "exported_" + getTableNameFromQuery(query).toLowerCase() + "_db.csv"
-    );
+    saveAs(blob, "exported_" + tableName.toLowerCase() + "_db.csv");
   }
 
   setIsLoading(false);

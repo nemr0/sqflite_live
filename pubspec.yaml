@@ -3,7 +3,7 @@ description: Sqflite live server for viewing db data on web-based local server.
 version: 1.2.1
 
 environment:
-  sdk: ^3.0.0
+  sdk: '>=3.0.0 <4.0.0'
 repository: https://github.com/nemr0/sqflite_live
 flutter:
   assets:

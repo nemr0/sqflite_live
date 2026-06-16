@@ -30,6 +30,8 @@
 	<array>
 		<string>_http._tcp</string>
 	</array>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Hosts the sqflite_live database viewer on the local network so you can inspect the app's database from a browser on the same Wi-Fi. Debug builds only.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

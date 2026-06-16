@@ -126,10 +126,17 @@ class IHostBinder extends HostBinder{
         return;
       }
       final String head = sql.trimLeft().toUpperCase();
-      final bool isQuery = head.startsWith('SELECT') ||
-          head.startsWith('PRAGMA') ||
-          head.startsWith('EXPLAIN') ||
-          head.startsWith('WITH');
+      // A WITH (CTE) prefix can front either a query or a mutation
+      // (`WITH x AS (...) INSERT/UPDATE/DELETE ...`), so peek past it for a
+      // mutation keyword instead of assuming it's read-only.
+      final bool isQuery;
+      if (head.startsWith('WITH')) {
+        isQuery = !RegExp(r'\b(INSERT|UPDATE|DELETE|REPLACE)\b').hasMatch(head);
+      } else {
+        isQuery = head.startsWith('SELECT') ||
+            head.startsWith('PRAGMA') ||
+            head.startsWith('EXPLAIN');
+      }
       final Object payload;
       if (isQuery) {
         payload = {'rows': await executor.query(sql)};
@@ -168,7 +175,7 @@ class IHostBinder extends HostBinder{
         'modified': stat.modified.millisecondsSinceEpoch,
       }));
     } catch (e) {
-      request.response.statusCode = HttpStatus.ok;
+      request.response.statusCode = HttpStatus.internalServerError;
       request.response.write(jsonEncode({'error': e.toString()}));
     } finally {
       await request.response.close();

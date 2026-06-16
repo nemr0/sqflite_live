@@ -28,9 +28,8 @@ extension SqlfliteExtension on Database {
   /// - [enabled]: Flag to determine if the live server should start. Defaults to true.
   /// - [level]: The logging level used to initialize the logger. Defaults to [LogLevel.info].
   /// - [port]: Port number on which the live server should run. Defaults to 8081.
-  /// - [autoRestart]: When true (default), the server is automatically stopped
-  ///   when the app is backgrounded and restarted when it returns to the
-  ///   foreground.
+  /// - [autoRestart]: When true (default), the server is automatically restarted if terminated
+  ///   when it returns to the foreground.
   ///
   /// Returns a [SqfliteLive] handle you can use to [SqfliteLive.stop],
   /// [SqfliteLive.start] or [SqfliteLive.dispose] the server, or `null` when

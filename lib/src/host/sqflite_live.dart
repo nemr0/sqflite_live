@@ -73,11 +73,9 @@ class SqfliteLive with WidgetsBindingObserver {
   /// otherwise it is left as-is.
   Future<void> ensureRunning() async {
     if (_disposed) return;
-    if (await _server.isHealthy()) {
-      // Still up — just re-log the URL so it's visible after resuming.
-      await _server.announce();
-      return;
-    }
+    // Still up — leave it alone. Re-announcing on every resume just spams the
+    // console; the URL was already logged when the server started.
+    if (await _server.isHealthy()) return;
     await stop();
     await start();
   }
