@@ -50,6 +50,22 @@ jobs:
         run: flutter test
       - name: Check Publish Warnings
         run: dart pub publish --dry-run
+
+      # Exchange the GitHub Actions OIDC token for a pub.dev credential. Done
+      # explicitly (rather than relying on auto-detection) because a Flutter
+      # package can't use pub.dev's Dart-only reusable publish workflow.
+      # Requires `id-token: write` (above) and Automated Publishing configured
+      # for this repo on pub.dev.
+      - name: Configure pub.dev OIDC credentials
+        run: |
+          set -euo pipefail
+          PUB_TOKEN="$(curl -sSL \
+            -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=https://pub.dev" | jq -r '.value')"
+          echo "::add-mask::$PUB_TOKEN"
+          echo "PUB_TOKEN=$PUB_TOKEN" >> "$GITHUB_ENV"
+          dart pub token add https://pub.dev --env-var PUB_TOKEN
+
       # pub.dev derives prerelease status from the semver string itself, so a
       # `-beta.x` version is published as a prerelease automatically (never shown
       # as the latest stable). No extra flag is needed here.
