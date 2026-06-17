@@ -1,0 +1,114 @@
+name: 🐛 Bug report
+description: Something in sqflite_live isn't working as expected.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug! Please fill in as much as you can —
+        the environment fields below are what make a report reproducible.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear and concise description of what the bug is.
+      placeholder: When I do X, Y happens instead of Z.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps to trigger the bug. A code snippet or sample app link helps a lot.
+      placeholder: |
+        1. Start the live server with `...`
+        2. Open the viewer at `...`
+        3. Edit a row from the app
+        4. See ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What you expected to happen.
+    validations:
+      required: true
+
+  - type: input
+    id: package-version
+    attributes:
+      label: sqflite_live version
+      description: The version from your `pubspec.yaml` / `pubspec.lock`.
+      placeholder: "1.2.1"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platforms
+    attributes:
+      label: Platform(s)
+      description: Where the host app runs.
+      multiple: true
+      options:
+        - Android
+        - iOS
+        - macOS
+        - Windows
+        - Linux
+        - Web
+    validations:
+      required: true
+
+  - type: input
+    id: viewer-browser
+    attributes:
+      label: Viewer browser
+      description: Which browser you used to open the web viewer, and its version.
+      placeholder: "Chrome 126, Safari 17, ..."
+    validations:
+      required: false
+
+  - type: textarea
+    id: flutter-doctor
+    attributes:
+      label: Output of `flutter doctor -v`
+      description: Run `flutter doctor -v` and paste the full output here.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies from your `pubspec.yaml`
+      description: >
+        Paste the `dependencies:` and `dev_dependencies:` sections of the project
+        that consumes sqflite_live. Version conflicts are a common source of issues.
+      render: yaml
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: >
+        Console output from the app and/or the browser devtools console. Include the
+        `SQFLITE Server @ ...` startup line if you have it.
+      render: shell
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and this is not a duplicate.
+          required: true
+        - label: I'm running a debug build (the viewer is intended for debug use only).
+          required: false
