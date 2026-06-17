@@ -1,16 +1,47 @@
+name: Publish to pub.dev
+
 on:
-  release:
-    branches:
-      - master
+  push:
+    tags:
+      # Matches v1.2.1, v1.0.2, and prereleases like v1.3.0-beta.1. Must line up
+      # with the pub.dev tag pattern `v{{version}}` under Automated publishing.
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      # id-token: OIDC auth to pub.dev (no stored credentials).
+      # contents: create the GitHub Release.
+      id-token: write
+      contents: write
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
+
+      - name: Verify tag matches pubspec version
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PUBSPEC_VERSION="$(grep -E '^version:' pubspec.yaml | sed -E 's/^version:[[:space:]]*//')"
+          echo "tag=$TAG_VERSION  pubspec=$PUBSPEC_VERSION"
+          if [ "$TAG_VERSION" != "$PUBSPEC_VERSION" ]; then
+            echo "::error::Tag v$TAG_VERSION does not match pubspec version $PUBSPEC_VERSION — aborting before publish."
+            exit 1
+          fi
+
+      - name: Detect prerelease
+        id: prerelease
+        run: |
+          # Semver prerelease versions carry a hyphen suffix (e.g. 1.3.0-beta.1).
+          if [[ "${GITHUB_REF_NAME#v}" == *-* ]]; then
+            echo "value=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Install Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.29.3'
+          flutter-version: '3.44.2'
       - name: Install dependencies
         run: flutter pub get
       - name: Analyze
@@ -19,9 +50,47 @@ jobs:
         run: flutter test
       - name: Check Publish Warnings
         run: dart pub publish --dry-run
+
+      # Exchange the GitHub Actions OIDC token for a pub.dev credential. Done
+      # explicitly (rather than relying on auto-detection) because a Flutter
+      # package can't use pub.dev's Dart-only reusable publish workflow.
+      # Requires `id-token: write` (above) and Automated Publishing configured
+      # for this repo on pub.dev.
+      - name: Configure pub.dev OIDC credentials
+        run: |
+          set -euo pipefail
+          PUB_TOKEN="$(curl -sSL \
+            -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=https://pub.dev" | jq -r '.value')"
+          echo "::add-mask::$PUB_TOKEN"
+          echo "PUB_TOKEN=$PUB_TOKEN" >> "$GITHUB_ENV"
+          dart pub token add https://pub.dev --env-var PUB_TOKEN
+
+      # pub.dev derives prerelease status from the semver string itself, so a
+      # `-beta.x` version is published as a prerelease automatically (never shown
+      # as the latest stable). No extra flag is needed here.
       - name: Publish
-        uses: k-paxian/dart-package-publisher@v1.5.1
+        run: dart pub publish --force
+
+      - name: Build release notes from CHANGELOG
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          {
+            # Lines for this version: everything between its `## <version>`
+            # heading and the next `## ` heading.
+            awk -v ver="$VERSION" '
+              $0 ~ "^## " ver "([ \t]|$)" { found=1; next }
+              found && /^## / { exit }
+              found { print }
+            ' CHANGELOG.md
+            echo ""
+            echo "📦 **[\`sqflite_live $VERSION\` on pub.dev](https://pub.dev/packages/sqflite_live/versions/$VERSION)**"
+          } > release_notes.md
+          echo "----- release notes -----"
+          cat release_notes.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          credentialJson: ${{ secrets.CREDENTIAL_JSON }}
-          flutter: true
-          skipTests: false
+          body_path: release_notes.md
+          prerelease: ${{ steps.prerelease.outputs.value }}
