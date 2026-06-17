@@ -37,7 +37,7 @@ class DatabaseHelper {
       onCreate: _onCreate,
     )
     /// JUST ADD THIS:::
-    ..live(enabled: kDebugMode, level: LogLevel.info, port: 8881));
+    ..live(enabled: kDebugMode, level: LogLevel.info));
   }
 
   // SQL to create the two tables

@@ -62,10 +62,39 @@ Future<Database> _initDatabase() async {
 Now run your app and open your browser (or any device on the same network) to:
 
 ```
+http://sqflite.local:8080
+```
+
+The server publishes the `sqflite.local` name over mDNS (Bonjour / zeroconf), so
+on the same Wi‑Fi you usually don't need to hunt for the device's IP. If your
+client doesn't resolve `.local` names, fall back to the IP printed in the
+console:
+
+```
 http://<YOUR_DEVICE_IP>:8080
 ```
 
 to view and interact with live database updates.
+
+> **mDNS notes:** name resolution only works under the `.local` TLD. On iOS the
+> app needs the multicast networking entitlement, and on Android receiving
+> queries needs a `MulticastLock`; the server also sends periodic announcements
+> so resolvers can cache the name where inbound multicast is filtered. Pass
+> `localHostname: ''` to disable mDNS and advertise the IP only.
+
+#### Dropping the port (`http://sqflite.local`)
+
+A browser uses port `80` when no port is given, so to open the viewer at the
+bare `http://sqflite.local`, run the server on port 80:
+
+```dart
+db.live(port: 80);
+```
+
+The advertised URL then omits the `:80`. Note that **80 is a privileged port**:
+it works on iOS, but Android (and desktop without admin rights) forbids binding
+ports below 1024 — there the server automatically falls back to `8081` and logs
+the port-suffixed URL instead.
 
 ### Options
 
@@ -77,6 +106,7 @@ to view and interact with live database updates.
 | `level`       | `LogLevel` | `LogLevel.info`    | Console log verbosity: `debug`, `info`, `warning`, `error`, `off`. |
 | `port`        | `int`      | `8081`             | Port the local server listens on.                        |
 | `autoRestart` | `bool`     | `true`             | On returning to the foreground, check the server and rebuild it only if it stopped responding. |
+| `localHostname` | `String` | `'sqflite.local'`  | `*.local` name published over mDNS so the viewer is reachable by name. Pass `''` to disable mDNS and advertise the IP only. |
 
 ```dart
 import 'package:sqflite_live/sqflite_live.dart';

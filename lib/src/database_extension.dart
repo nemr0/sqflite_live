@@ -30,16 +30,23 @@ extension SqlfliteExtension on Database {
   /// - [port]: Port number on which the live server should run. Defaults to 8081.
   /// - [autoRestart]: When true (default), the server is automatically restarted if terminated
   ///   when it returns to the foreground.
+  /// - [localHostname]: A `*.local` name published over mDNS so the viewer is
+  ///   reachable by name (e.g. `http://sqflite.local:8081`) instead of a raw
+  ///   IP. Defaults to `sqflite.local`; pass an empty string to disable mDNS
+  ///   and advertise the IP only. (mDNS only resolves the `.local` TLD; note
+  ///   iOS needs the multicast networking entitlement and Android needs a
+  ///   `MulticastLock` to *receive* queries — periodic announcements help
+  ///   resolvers cache the name even where inbound multicast is filtered.)
   ///
   /// Returns a [SqfliteLive] handle you can use to [SqfliteLive.stop],
   /// [SqfliteLive.start] or [SqfliteLive.dispose] the server, or `null` when
   /// [enabled] is false or the platform is unsupported.
 
-  Future<SqfliteLive?> live({bool enabled = kDebugMode,LogLevel level = LogLevel.info,int port = 8081,bool autoRestart = true}) async {
+  Future<SqfliteLive?> live({bool enabled = kDebugMode,LogLevel level = LogLevel.info,int port = 8081,bool autoRestart = true,String localHostname = 'sqflite.local'}) async {
     if(enabled == false || isSupportedPlatform()==false) return null;
     final logger = ILogMe(level);
     final path = await getDatabasesPath();
-    final hostParameter = HostParameters(dbPath: path, port: port);
+    final hostParameter = HostParameters(dbPath: path, port: port, localHostname: localHostname);
     final FileManager fileManager = IFileManager();
     // `this` is the live connection, so SQL from the viewer runs on the same
     // database the app uses.

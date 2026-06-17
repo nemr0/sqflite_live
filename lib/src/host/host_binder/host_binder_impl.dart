@@ -8,6 +8,8 @@ import 'package:sqflite_live/src/host/db_executor.dart';
 import 'package:sqflite_live/src/host/host_binder/host_binder.dart';
 import 'package:sqflite_live/src/host/host_binder/host_parameters.dart';
 import 'package:sqflite_live/src/host/logger/log_me.dart';
+import 'package:sqflite_live/src/host/mdns/mdns_responder.dart';
+import 'package:sqflite_live/src/host/mdns/mdns_responder_impl.dart';
 
 import '../../exceptions/server_failure.dart';
 class IHostBinder extends HostBinder{
@@ -18,6 +20,18 @@ class IHostBinder extends HostBinder{
   final DbExecutor? _executor;
   IHostBinder(this._hostParameters,  this._logMe, [this._executor]);
   HttpServer? server;
+  /// Publishes the `*.local` name over mDNS while the server is up. Null when
+  /// the feature is disabled (empty hostname) or not yet started.
+  MdnsResponder? _mdns;
+
+  /// Safe, unprivileged port used when the requested one can't be bound.
+  static const int _fallbackPort = 8081;
+
+  /// The port the server actually bound to. May differ from the requested
+  /// [HostParameters.port] if it fell back (e.g. port 80 on a platform that
+  /// disallows binding privileged ports).
+  int? _boundPort;
+  int get _port => _boundPort ?? _hostParameters.port;
   /// Returns all non-loopback IPv4 addresses, most-likely-reachable first.
   ///
   /// WiFi/Ethernet (`en*`, `eth*`) addresses are preferred. Interfaces that
@@ -50,6 +64,32 @@ class IHostBinder extends HostBinder{
     }
     return [...preferred, ...fallback];
   }
+
+  /// Binds the HTTP server, falling back to [_fallbackPort] when a privileged
+  /// port (<1024, e.g. 80 for a clean `http://sqflite.local` URL) can't be
+  /// bound — which is the norm on Android and on desktop without admin rights.
+  ///
+  /// shared: true lets a fresh bind coexist with a socket leaked by a previous
+  /// hot restart (whose Dart state was reset before closeServer ran), instead
+  /// of throwing "address already in use".
+  Future<HttpServer> _bind(int port) async {
+    try {
+      final HttpServer s = await HttpServer.bind(InternetAddress.anyIPv4, port,
+          shared: true);
+      _boundPort = port;
+      return s;
+    } on SocketException catch (e) {
+      if (port < 1024 && port != _fallbackPort) {
+        _logMe.warning(
+            'Could not bind port $port ($e) — this platform likely forbids '
+            'privileged ports. Falling back to $_fallbackPort; the URL will '
+            'include :$_fallbackPort.');
+        return _bind(_fallbackPort);
+      }
+      rethrow;
+    }
+  }
+
   @override
   Future<void> startServer(String hostDirectory) async {
     try {
@@ -59,12 +99,8 @@ class IHostBinder extends HostBinder{
         throw(FileFailure('Host Directory Doesn\'t Exist!'));
       }
 
-      // shared: true lets a fresh bind coexist with a socket leaked by a
-      // previous hot restart (whose Dart state was reset before closeServer
-      // ran), instead of throwing "address already in use" — which would skip
-      // the URL log below.
-      server = await HttpServer.bind(InternetAddress.anyIPv4, _hostParameters.port,
-          shared: true);
+      server = await _bind(_hostParameters.port);
+      await _startLocalDomain();
       await logAddress();
       await for (HttpRequest request in server!) {
         if (request.method == 'POST' && request.uri.path == '/exec') {
@@ -182,25 +218,56 @@ class IHostBinder extends HostBinder{
     }
   }
 
+  /// Brings up the mDNS responder so the server answers to its `*.local`
+  /// name. Skipped when [HostParameters.localHostname] is empty.
+  Future<void> _startLocalDomain() async {
+    final String host = _hostParameters.localHostname;
+    if (host.isEmpty) return;
+    _mdns ??= IMdnsResponder(
+      hostname: host,
+      resolveAddress: () async {
+        final ips = await _getLocalIpAddresses();
+        return ips.isEmpty ? null : ips.first;
+      },
+      logMe: _logMe,
+    );
+    await _mdns!.start();
+  }
+
+  /// Builds an `http://` URL for [hostOrIp], omitting the `:80` suffix so the
+  /// default HTTP port produces a clean address (`http://sqflite.local`).
+  String _url(String hostOrIp) =>
+      _port == 80 ? 'http://$hostOrIp' : 'http://$hostOrIp:$_port';
+
   @override
   Future<void> logAddress() async {
     final List<String> ips = await _getLocalIpAddresses();
-    final int port = _hostParameters.port;
     final String primary = ips.isEmpty ? 'localhost' : ips.first;
-    _logMe.info('🗂️ SQFLITE Server @ http://$primary:$port');
+    final String host = _hostParameters.localHostname;
+    if (host.isNotEmpty) {
+      _logMe.info('🗂️ SQFLITE Server @ ${_url(host)}');
+      _logMe.info('   or by IP: ${_url(primary)}');
+    } else {
+      _logMe.info('🗂️ SQFLITE Server @ ${_url(primary)}');
+    }
     if (ips.length > 1) {
-      final others =
-          ips.skip(1).map((ip) => 'http://$ip:$port').join('  •  ');
+      final others = ips.skip(1).map(_url).join('  •  ');
       _logMe.info('   if unreachable, try: $others');
     }
+    // The IP may have changed since the last bind (e.g. across a resume), so
+    // refresh the mDNS record while we're re-announcing the address.
+    await _mdns?.announce();
   }
 
   @override
   Future<void> closeServer() async {
+    await _mdns?.stop();
+    _mdns = null;
     // force: true drops open connections immediately so a restart can't hang
     // waiting on a browser keep-alive socket.
     await server?.close(force: true);
     server = null;
+    _boundPort = null;
   }
 
   @override
@@ -210,7 +277,7 @@ class IHostBinder extends HostBinder{
     try {
       client = HttpClient()..connectionTimeout = const Duration(seconds: 1);
       final HttpClientRequest request =
-          await client.get('127.0.0.1', _hostParameters.port, '/');
+          await client.get('127.0.0.1', _port, '/');
       final HttpClientResponse response =
           await request.close().timeout(const Duration(seconds: 2));
       await response.drain<void>();

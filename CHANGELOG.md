@@ -1,3 +1,9 @@
+## 1.3.0
+
+- The live server is now reachable by name at **`http://sqflite.local:<port>`** via a built-in mDNS (Bonjour / zeroconf) responder — no more copying the device IP on the same Wi‑Fi. Configurable through the new `live(localHostname:)` parameter; pass `''` to disable and advertise the IP only. (mDNS resolves only the `.local` TLD; iOS needs the multicast networking entitlement and Android a `MulticastLock` to receive queries, so the server also announces periodically.)
+- Run on **port 80** (`live(port: 80)`) to get a clean **`http://sqflite.local`** with no port suffix. Privileged ports can't be bound on Android or desktop-without-admin, so the server now falls back to `8081` automatically (with a warning) instead of failing to start.
+- The console logger no longer leaks raw ANSI escapes (e.g. `^[[36m`) when the output stream doesn't render them; colors/hyperlinks are emitted only in capable terminals.
+
 ## 1.2.1
 
 - Removed the `logger`, `equatable` and `archive` dependencies (smaller bundle).
