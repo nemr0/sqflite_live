@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📦 Package on pub.dev
+    url: https://pub.dev/packages/sqflite_live
+    about: Changelog, versions, and installation instructions.
+  - name: 💬 Questions & usage help
+    url: https://github.com/nemr0/sqflite_live/discussions
+    about: For "how do I ...?" questions, please open a Discussion instead of an issue.
